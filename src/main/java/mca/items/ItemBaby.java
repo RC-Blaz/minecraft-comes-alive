@@ -147,7 +147,6 @@ public class ItemBaby extends Item
 			childMemory.setHearts(100);
 			childMemory.setDialogueType(EnumDialogueType.CHILDP);
 			childMemory.setRelation(child.attributes.getGender() == EnumGender.MALE ? EnumRelation.SON : EnumRelation.DAUGHTER);
-
 			player.inventory.setInventorySlotContents(player.inventory.currentItem, ItemStack.EMPTY);
 			player.addStat(AchievementsMCA.babyToChild);
 
@@ -163,7 +162,9 @@ public class ItemBaby extends Item
 	{
 		ItemStack stack = player.getHeldItem(hand);
 		
-		if (!world.isRemote && stack.getTagCompound().getString("name").equals("Unnamed"))
+		if (!world.isRemote && 
+				stack.getTagCompound().getString("name").equals("Unnamed") && 
+				hand != EnumHand.OFF_HAND)
 		{
 			ItemBaby baby = (ItemBaby) stack.getItem();
 			MCA.getPacketHandler().sendPacketToPlayer(new PacketOpenBabyNameGUI(baby.isBoy), (EntityPlayerMP)player);
