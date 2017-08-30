@@ -1,5 +1,7 @@
 package mca.packets;
 
+import java.util.List;
+
 import io.netty.buffer.ByteBuf;
 import mca.actions.ActionGrow;
 import mca.actions.ActionStoryProgression;
@@ -8,13 +10,13 @@ import mca.api.IGiftableItem;
 import mca.api.RegistryMCA;
 import mca.core.Constants;
 import mca.core.MCA;
-import mca.core.minecraft.AchievementsMCA;
 import mca.core.minecraft.ItemsMCA;
 import mca.data.NBTPlayerData;
 import mca.data.PlayerMemory;
 import mca.entity.EntityVillagerMCA;
 import mca.enums.EnumBabyState;
 import mca.enums.EnumMarriageState;
+import mca.enums.EnumProfession;
 import mca.enums.EnumProgressionStep;
 import mca.inventory.VillagerInventory;
 import mca.util.Either;
@@ -77,6 +79,30 @@ public class PacketGift extends AbstractPacket<PacketGift>
 			human.say("interaction.give.invalid", player); 
 		}
 
+		else if (data.getSpouseUUID() == human.getPersistentID() && human.attributes.getMarriageState() == EnumMarriageState.ENGAGED)
+		{
+			//Violates DRY, yes, but it will work for now
+
+			human.say("interaction.marry.success", player); 
+
+			human.startMarriage(Either.<EntityVillagerMCA, EntityPlayer>withR(player));
+			memory.setIsHiredBy(false, 0);
+			
+			human.getBehavior(ActionUpdateMood.class).modifyMoodLevel(3.0F);
+			Utilities.spawnParticlesAroundEntityS(EnumParticleTypes.HEART, human, 16);
+			TutorialManager.sendMessageToPlayer(player, "You are now married. You can have", "children by using the 'Procreate' button.");
+			
+			List<EntityVillagerMCA> nearbyVillagers = RadixLogic.getEntitiesWithinDistance(EntityVillagerMCA.class, player, 30);
+			
+			for (EntityVillagerMCA villager : nearbyVillagers)
+			{
+				PlayerMemory otherVillagerMemory = villager.attributes.getPlayerMemory(player);
+				otherVillagerMemory.setHasGift(true);
+			}
+			
+			return true;
+		}
+		
 		else if (data.getSpouseUUID() == human.getPersistentID())
 		{
 			human.say("interaction.marry.fail.marriedtogiver", player); 
@@ -105,7 +131,7 @@ public class PacketGift extends AbstractPacket<PacketGift>
 
 		else
 		{
-			/* TODO player.addStat(AchievementsMCA.marriage);*/
+			//player.addStat(AchievementsMCA.marriage);
 			human.say("interaction.marry.success", player); 
 
 			human.startMarriage(Either.<EntityVillagerMCA, EntityPlayer>withR(player));
@@ -178,7 +204,7 @@ public class PacketGift extends AbstractPacket<PacketGift>
 
 					if (human.attributes.isPlayerAParent(onlinePlayer) || partner.attributes.isPlayerAParent(onlinePlayer))
 					{
-						/* TODO onlinePlayer.addStat(AchievementsMCA.childMarried); */	
+						//onlinePlayer.addStat(AchievementsMCA.childMarried);	
 					}
 				}
 
@@ -228,7 +254,7 @@ public class PacketGift extends AbstractPacket<PacketGift>
 
 		else
 		{
-			/* TODO player.addStat(AchievementsMCA.engagement); */
+			//player.addStat(AchievementsMCA.engagement);
 			human.say("interaction.engage.success", player); 
 			human.attributes.setFiancee(player);
 			
@@ -363,27 +389,33 @@ public class PacketGift extends AbstractPacket<PacketGift>
 			boolean removeItem = false;
 			int removeCount = 1;
 
-			if (item == ItemsMCA.weddingRing || item == ItemsMCA.weddingRingRG)
+			if (item == ItemsMCA.WEDDING_RING || item == ItemsMCA.WEDDING_RING_RG)
 			{
 				removeItem = handleWeddingRing(player, human);
 			}
 
-			else if (item == ItemsMCA.matchmakersRing)
+			else if (item == ItemsMCA.MATCHMAKERS_RING)
 			{
 				removeItem = handleMatchmakersRing(player, human, stack);
 				removeCount = 2;
 			}
 
-			else if (item == ItemsMCA.engagementRing || item == ItemsMCA.weddingRingRG || item == ItemsMCA.engagementRingRG)
+			else if (item == ItemsMCA.ENGAGEMENT_RING || item == ItemsMCA.ENGAGEMENT_RING_RG)
 			{
 				removeItem = handleEngagementRing(player, human);
 			}
 
-			else if (item == ItemsMCA.divorcePapers)
+			else if (item == ItemsMCA.DIVORCE_PAPERS)
 			{
 				removeItem = handleDivorcePapers(player, human);
 			}
 
+			else if (item == ItemsMCA.BOOK_ROSE_GOLD && human.getName().equals("William") && human.attributes.getProfessionEnum() == EnumProfession.Miner)
+			{
+				removeItem = true;
+				human.sayRaw("Oh, thank you for returning this to me! My company secrets could have been lost forever!", player);
+			}
+			
 			else if (human.attributes.getIsInfected() && human.getActivePotionEffect(MobEffects.WEAKNESS) != null && stack.getItem() == Items.GOLDEN_APPLE)
 			{
 				removeItem = true;
@@ -400,7 +432,7 @@ public class PacketGift extends AbstractPacket<PacketGift>
 				human.getBehavior(ActionGrow.class).accelerate();
 			}
 
-			else if ((item == ItemsMCA.babyBoy || item == ItemsMCA.babyGirl) && human.attributes.getPlayerSpouseInstance() == player)
+			else if ((item == ItemsMCA.BABY_BOY || item == ItemsMCA.BABY_GIRL) && human.attributes.getPlayerSpouseInstance() == player)
 			{
 				removeItem = true;
 				removeCount = 1;
@@ -452,7 +484,7 @@ public class PacketGift extends AbstractPacket<PacketGift>
 				}
 			}
 
-			else if (item == ItemsMCA.newOutfit && human.attributes.allowsControllingInteractions(player))
+			else if (item == ItemsMCA.NEW_OUTFIT && human.attributes.allowsControllingInteractions(player))
 			{
 				Utilities.spawnParticlesAroundEntityS(EnumParticleTypes.VILLAGER_HAPPY, human, 16);
 				human.attributes.setClothesTexture(human.attributes.getProfessionSkinGroup().getRandomMaleSkin());

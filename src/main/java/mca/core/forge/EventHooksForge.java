@@ -4,8 +4,6 @@ import java.lang.reflect.Field;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.base.Predicate;
-
 import mca.actions.ActionCombat;
 import mca.core.Constants;
 import mca.core.MCA;
@@ -42,10 +40,18 @@ import net.minecraft.init.SoundEvents;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.SoundEvent;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
+import net.minecraft.world.storage.loot.LootEntryItem;
+import net.minecraft.world.storage.loot.LootPool;
+import net.minecraft.world.storage.loot.LootTable;
+import net.minecraft.world.storage.loot.conditions.LootCondition;
+import net.minecraft.world.storage.loot.functions.LootFunction;
 import net.minecraftforge.client.event.RenderGameOverlayEvent;
 import net.minecraftforge.common.util.FakePlayer;
+import net.minecraftforge.event.LootTableLoadEvent;
 import net.minecraftforge.event.RegistryEvent;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
@@ -68,18 +74,34 @@ public class EventHooksForge
 	public void onRegisterItems(RegistryEvent.Register<Item> event) 
 	{
 		ItemsMCA.register(event);
+		BlocksMCA.registerItemBlocks(event);
 	}
 	
 	@SubscribeEvent
 	public void onRegisterBlocks(RegistryEvent.Register<Block> event)
 	{
-		BlocksMCA.register(event);		
+		BlocksMCA.register(event);
 	}
 
 	@SubscribeEvent
 	public void onRegisterSounds(RegistryEvent.Register<SoundEvent> event)
 	{
 		SoundsMCA.register(event);
+	}
+	
+	@SubscribeEvent
+	public void onLootTableLoad(LootTableLoadEvent event)
+	{
+		if (event.getName().toString().equals("minecraft:chests/simple_dungeon") || event.getName().toString().equals("minecraft:chests/stronghold_library"))
+		{
+			LootPool main = event.getTable().getPool("main");
+			
+			main.addEntry(new LootEntryItem(ItemsMCA.BOOK_DEATH, 20, 0, new LootFunction[0], new LootCondition[0], "mca:book_death"));
+			main.addEntry(new LootEntryItem(ItemsMCA.BOOK_FAMILY, 20, 0, new LootFunction[0], new LootCondition[0], "mca:book_family"));
+			main.addEntry(new LootEntryItem(ItemsMCA.BOOK_INFECTION, 20, 0, new LootFunction[0], new LootCondition[0], "mca:book_infection"));
+			main.addEntry(new LootEntryItem(ItemsMCA.BOOK_ROMANCE, 20, 0, new LootFunction[0], new LootCondition[0], "mca:book_romance"));
+			main.addEntry(new LootEntryItem(ItemsMCA.BOOK_ROSE_GOLD, 20, 0, new LootFunction[0], new LootCondition[0], "mca:book_rose_gold"));
+		}
 	}
 	
 	@SubscribeEvent
@@ -105,8 +127,6 @@ public class EventHooksForge
 					{
 						boolean isMale = RadixLogic.getBooleanWithProbability(50);
 						final EntityVillagerMCA human = new EntityVillagerMCA(zombie.world);
-						//final EntityVillagerMCA human = new EntityVillagerMCA(zombie.world, isMale, EnumProfession.getAtRandom().getId(), false);
-						//TODO
 						human.setPosition(zombie.posX, zombie.posY, zombie.posZ);
 						zombie.world.spawnEntity(human);
 						event.getEntity().setDead();
@@ -142,19 +162,7 @@ public class EventHooksForge
 
 			else if (mob instanceof EntityCreeper)
 			{
-				/* TODO
-				mob.tasks.addTask(3, new EntityAIAvoidEntity(mob, EntityVillagerMCA.class, new Predicate()
-				{
-					public boolean func_179958_a(Entity p_179958_1_)
-					{
-						return p_179958_1_ instanceof EntityVillagerMCA;
-					}
-
-					public boolean apply(Object p_apply_1_)
-					{
-						return this.func_179958_a((Entity)p_apply_1_);
-					}
-				}, 6.0F, 1.0D, 1.2D)); */
+				mob.tasks.addTask(3, new EntityAIAvoidEntity(mob, EntityVillagerMCA.class, 6.0F, 1.0D, 1.2D));
 			}
 
 			else
@@ -333,7 +341,7 @@ public class EventHooksForge
 						{
 							stack.getTagCompound().setBoolean("isInfected", true);
 							player.sendMessage(new TextComponentString(Color.RED + stack.getTagCompound().getString("name") + " has been " + Color.GREEN + Format.BOLD + "infected" + Color.RED + "!"));
-							player.playSound(SoundEvents.ENTITY_WITHER_AMBIENT, 0.5F, 1.0F);
+							player.world.playSound(null, new BlockPos(zombie.posX, zombie.posY, zombie.posZ), SoundEvents.ENTITY_WITHER_AMBIENT, SoundCategory.HOSTILE, 0.5F, 1.0F);
 							Utilities.spawnParticlesAroundEntityS(EnumParticleTypes.SPELL_WITCH, player, 32);
 						}
 					}

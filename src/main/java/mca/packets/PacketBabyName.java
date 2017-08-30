@@ -65,8 +65,8 @@ public class PacketBabyName extends AbstractPacket<PacketBabyName>
 		{
 			if (playerSpouse != null)
 			{
-				int babySlot = playerSpouse.attributes.getInventory().getFirstSlotContainingItem(ItemsMCA.babyBoy);
-				babySlot = babySlot == -1 ? playerSpouse.attributes.getInventory().getFirstSlotContainingItem(ItemsMCA.babyGirl) : babySlot;
+				int babySlot = playerSpouse.attributes.getInventory().getFirstSlotContainingItem(ItemsMCA.BABY_BOY);
+				babySlot = babySlot == -1 ? playerSpouse.attributes.getInventory().getFirstSlotContainingItem(ItemsMCA.BABY_GIRL) : babySlot;
 				
 				if (babySlot != -1)
 				{
@@ -86,7 +86,7 @@ public class PacketBabyName extends AbstractPacket<PacketBabyName>
 				{
 					playerSpouse.getBehavior(ActionProcreate.class).setIsProcreating(true);
 					procreateAI.setHasHadTwins(true);
-					/*TODO senderPlayer.addStat(AchievementsMCA.twins);*/
+					//senderPlayer.addStat(AchievementsMCA.twins);
 					
 					TutorialManager.sendMessageToPlayer(senderPlayer, "Congratulations! You've just had twins!", "Your spouse can only have twins once.");
 				}

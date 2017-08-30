@@ -22,9 +22,7 @@ public class BlockVillagerSpawner extends Block
 	public BlockVillagerSpawner()
 	{
 		super(Material.IRON);
-		
-		setCreativeTab(MCA.getCreativeTab());
-		setUnlocalizedName("VillagerSpawner");
+
 		setTickRandomly(true);
 		setHardness(1.0F);
 	}
@@ -68,7 +66,12 @@ public class BlockVillagerSpawner extends Block
 			if (continueSpawning)
 			{
 				final EntityVillagerMCA human = new EntityVillagerMCA(world);
-				human.attributes.setGender(world.rand.nextBoolean() ? EnumGender.MALE : EnumGender.FEMALE);
+				human.attributes.assignRandomGender();
+				human.attributes.assignRandomName();
+				human.attributes.assignRandomPersonality();
+				human.attributes.assignRandomProfession();
+				human.attributes.assignRandomSkin();
+				human.attributes.assignRandomScale();
 				human.setPositionAndRotation((double) pos.getX() + 0.5F, (double) spawnY, (double) pos.getZ() + 0.5F, (float)random.nextInt(360) + 1, 0.0F);
 				world.spawnEntity(human);
 			}

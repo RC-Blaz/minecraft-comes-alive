@@ -566,7 +566,7 @@ public class GuiInteraction extends GuiScreen
 					MCA.getPacketHandler().sendPacketToServer(new PacketInteract(interaction.getId(), 
 							villager.getEntityId(), 
 							new Integer(hireLengths.get()), 
-							new Boolean(currentPage == EnumInteraction.EXTEND.getId())));
+							Boolean.valueOf(currentPage == EnumInteraction.EXTEND.getId())));
 				}
 
 				Minecraft.getMinecraft().displayGuiScreen(null);
@@ -1204,7 +1204,7 @@ public class GuiInteraction extends GuiScreen
 			((GuiButton)buttonList.get(2)).enabled = false;
 		}
 		
-		TutorialManager.setTutorialMessage(new TutorialMessage("Taxing will result in a small contribution of items possible", "every 20 minutes. It also decrease hearts of all nearby villagers."));
+		TutorialManager.setTutorialMessage(new TutorialMessage("Taxing will result in a small contribution of items possible", "every 20 minutes. It also decreases hearts of all nearby villagers."));
 	}
 	
 	private void close()

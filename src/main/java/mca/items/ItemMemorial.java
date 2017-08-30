@@ -6,7 +6,7 @@ import org.lwjgl.input.Keyboard;
 
 import mca.core.MCA;
 import mca.core.minecraft.BlocksMCA;
-import mca.entity.VillagerAttributes;
+import mca.data.TransitiveVillagerData;
 import mca.enums.EnumMemorialType;
 import mca.enums.EnumRelation;
 import mca.tile.TileMemorial;
@@ -32,8 +32,6 @@ public class ItemMemorial extends Item
 		super();
 
 		this.type = type;
-		this.setUnlocalizedName(type.getTypeName());
-		this.setCreativeTab(MCA.getCreativeTab());
 		this.setMaxStackSize(1);
 	}
 
@@ -43,17 +41,19 @@ public class ItemMemorial extends Item
 		ItemStack stack = playerIn.getHeldItem(hand);
 		
 		if (!worldIn.isRemote && stack.hasTagCompound())
-		{			
+		{
+			pos = pos.add(0, 1, 0);
 			worldIn.setBlockState(pos, BlocksMCA.memorial.getDefaultState(), 2);
 			TileMemorial tile = (TileMemorial) worldIn.getTileEntity(pos);
 			
 			tile.setType(this.type);
-			tile.setVillagerSaveData(new VillagerAttributes(stack.getTagCompound()));
+			tile.setTransitiveVillagerData(new TransitiveVillagerData(stack.getTagCompound()));
 			tile.setOwnerName(stack.getTagCompound().getString("ownerName"));
-
+			tile.setOwnerUUID(stack.getTagCompound().getUniqueId("ownerUUID"));
+			
 			if (stack.hasTagCompound())
 			{
-				tile.setRelation(EnumRelation.getById(stack.getTagCompound().getInteger("relation")));
+				tile.setRelation(EnumRelation.getById(stack.getTagCompound().getInteger("ownerRelation")));
 			}
 			
 			else
@@ -75,10 +75,10 @@ public class ItemMemorial extends Item
 
 		if (stack.hasTagCompound())
 		{
-			VillagerAttributes data = new VillagerAttributes(stack.getTagCompound());
+			TransitiveVillagerData data = new TransitiveVillagerData(stack.getTagCompound());
 			String ownerName = stack.getTagCompound().getString("ownerName");
 			String name = data.getName();
-			String relationId = EnumRelation.getById(stack.getTagCompound().getInteger("relation")).getPhraseId(); 
+			String relationId = EnumRelation.getById(stack.getTagCompound().getInteger("ownerRelation")).getPhraseId(); 
 			
 			tooltip.add(Color.WHITE + "Belonged to: ");
 
@@ -89,7 +89,7 @@ public class ItemMemorial extends Item
 			
 			else
 			{
-				tooltip.add(Color.GREEN + name + " the " + MCA.getLocalizer().getString(data.getProfessionEnum().getLocalizationId()));
+				tooltip.add(Color.GREEN + name + " the " + MCA.getLocalizer().getString(data.getProfession().getLocalizationId()));
 				tooltip.add("Captured by: " + ownerName);
 			}
 		}

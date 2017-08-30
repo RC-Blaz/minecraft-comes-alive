@@ -1,9 +1,10 @@
 package mca.items;
 
 import java.util.List;
+import java.util.UUID;
 
+import mca.core.Constants;
 import mca.core.MCA;
-import mca.core.minecraft.AchievementsMCA;
 import mca.data.NBTPlayerData;
 import mca.data.PlayerMemory;
 import mca.entity.EntityVillagerMCA;
@@ -39,12 +40,8 @@ public class ItemBaby extends Item
 
 	public ItemBaby(boolean isBoy)
 	{
-		final String itemName = isBoy ? "BabyBoy" : "BabyGirl";
-
 		this.isBoy = isBoy;
-		this.setCreativeTab(MCA.getCreativeTab());
 		this.setMaxStackSize(1);
-		this.setUnlocalizedName(itemName);
 	}
 
 	@Override
@@ -106,26 +103,44 @@ public class ItemBaby extends Item
 			boolean isPlayerMale = data.getGender() == EnumGender.MALE ? true : false;
 
 			String motherName = "N/A";
-			int motherId = 0;
+			UUID motherId = Constants.EMPTY_UUID;
+			EnumGender motherGender = EnumGender.UNASSIGNED;
 			String fatherName = "N/A";
-			int fatherId = 0;
-
+			UUID fatherId = Constants.EMPTY_UUID;
+			EnumGender fatherGender = EnumGender.UNASSIGNED;
+			
 			if (isPlayerMale)
 			{
 				motherName = data.getSpouseName();
-				//motherId = data.getSpouseUUID();
+				motherId = data.getSpouseUUID();
+				motherGender = data.getSpouseGender();
 				fatherName = player.getName();
-				//fatherId = data.getPermanentId();
+				fatherId = data.getUUID();
+				fatherGender = data.getGender();
 			}
 
 			else
 			{
 				fatherName = data.getSpouseName();
-				//fatherId = data.getSpouseUUID();
+				fatherId = data.getSpouseUUID();
+				fatherGender = data.getSpouseGender();
 				motherName = player.getName();
-				//motherId = data.getPermanentId();				
+				motherId = data.getUUID();
+				motherGender = data.getGender();
 			}
 
+			if (motherId == null) {
+				motherId = Constants.EMPTY_UUID; 
+				motherName = "N/A"; 
+				motherGender = EnumGender.UNASSIGNED;
+			}
+			
+			if (fatherId == null) {
+				fatherId = Constants.EMPTY_UUID; 
+				fatherName = "N/A"; 
+				fatherGender = EnumGender.UNASSIGNED;
+			}
+			
 			final EntityVillagerMCA child = new EntityVillagerMCA(world);
 			child.attributes.setGender(baby.isBoy ? EnumGender.MALE : EnumGender.FEMALE);
 			child.attributes.setIsChild(true);
@@ -133,8 +148,12 @@ public class ItemBaby extends Item
 			child.attributes.setProfession(EnumProfession.Child);
 			child.attributes.assignRandomSkin();
 			child.attributes.assignRandomScale();
-			
-			//TODO set parents
+			child.attributes.setMotherGender(motherGender);
+			child.attributes.setMotherName(motherName);
+			child.attributes.setMotherUUID(motherId);
+			child.attributes.setFatherGender(fatherGender);
+			child.attributes.setFatherName(fatherName);
+			child.attributes.setFatherUUID(fatherId);
 			
 			child.setPosition(posX, posY + 1, posZ);
 
@@ -151,7 +170,7 @@ public class ItemBaby extends Item
 			childMemory.setRelation(child.attributes.getGender() == EnumGender.MALE ? EnumRelation.SON : EnumRelation.DAUGHTER);
 
 			player.inventory.setInventorySlotContents(player.inventory.currentItem, ItemStack.EMPTY);
-			/* TODO player.addStat(AchievementsMCA.babyToChild); */
+			//player.addStat(AchievementsMCA.babyToChild);
 
 			data.setOwnsBaby(false);
 		}

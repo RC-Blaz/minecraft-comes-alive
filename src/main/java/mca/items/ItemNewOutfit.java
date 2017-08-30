@@ -4,7 +4,6 @@ import java.util.List;
 
 import mca.core.MCA;
 import net.minecraft.client.util.ITooltipFlag;
-import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.world.World;
@@ -15,8 +14,6 @@ public class ItemNewOutfit extends Item
 	{
 		super();
 		
-		this.setUnlocalizedName("NewOutfit");
-		this.setCreativeTab(MCA.getCreativeTab());
 		this.setMaxStackSize(1);
 		this.setMaxDamage(16);
 	}

@@ -1,9 +1,11 @@
 package mca.tile;
 
+import java.util.UUID;
+
 import mca.core.MCA;
 import mca.data.PlayerMemory;
+import mca.data.TransitiveVillagerData;
 import mca.entity.EntityVillagerMCA;
-import mca.entity.VillagerAttributes;
 import mca.enums.EnumDialogueType;
 import mca.enums.EnumGender;
 import mca.enums.EnumMemorialType;
@@ -18,15 +20,17 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumParticleTypes;
 import net.minecraft.util.ITickable;
+import net.minecraft.util.SoundCategory;
 import radixcore.constant.Time;
 import radixcore.modules.RadixBlocks;
 
 public class TileMemorial extends TileEntity implements ITickable
 {
 	private EnumMemorialType type;
-	private VillagerAttributes data;
+	private TransitiveVillagerData data;
 	private String ownerName;
 	private EnumRelation ownerRelation;
+	private UUID ownerUUID;
 	private int revivalTicks;
 	private EntityPlayer player;
 	private boolean hasSynced;
@@ -45,7 +49,7 @@ public class TileMemorial extends TileEntity implements ITickable
 			int x = pos.getX();
 			int y = pos.getY();
 			int z = pos.getZ();
-			
+
 			if (player == null || player.isDead) //Skip if the player is gone somehow, either on reload or logout.
 			{
 				revivalTicks = 0;
@@ -62,7 +66,7 @@ public class TileMemorial extends TileEntity implements ITickable
 				RadixBlocks.setBlock(world, x, y, z, Blocks.AIR);
 				Utilities.spawnParticlesAroundEntityS(EnumParticleTypes.VILLAGER_HAPPY, human, 32);
 				Utilities.spawnParticlesAroundPointS(EnumParticleTypes.FIREWORKS_SPARK, world, x + 0.5D, y, z + 0.5D, 16);
-				player.playSound(SoundEvents.ENTITY_FIREWORK_LARGE_BLAST, 3.0F, 1.0F);
+				world.playSound(null, pos, SoundEvents.ENTITY_FIREWORK_LARGE_BLAST, SoundCategory.AMBIENT, 3.0F, 1.0F);
 
 				if (this.ownerRelation == EnumRelation.NONE)
 				{
@@ -71,8 +75,11 @@ public class TileMemorial extends TileEntity implements ITickable
 				
 				else if (this.getType() == EnumMemorialType.BROKEN_RING)
 				{
+					PlayerMemory memory = human.attributes.getPlayerMemory(player);
 					human.startMarriage(Either.<EntityVillagerMCA, EntityPlayer>withR(player));
-					human.attributes.getPlayerMemory(player).setHearts(100);
+					memory.setHearts(100);
+					memory.setDialogueType(EnumDialogueType.SPOUSE);
+					memory.setRelation(human.attributes.getGender() == EnumGender.MALE ? EnumRelation.HUSBAND : EnumRelation.WIFE);
 				}
 
 				else
@@ -91,7 +98,7 @@ public class TileMemorial extends TileEntity implements ITickable
 
 				if (revivalTicks == Time.SECOND * 2 || revivalTicks == Time.SECOND * 1)
 				{
-					player.playSound(SoundEvents.ENTITY_FIREWORK_LARGE_BLAST, 3.0F, 1.0F);
+					world.playSound(null, pos, SoundEvents.ENTITY_FIREWORK_LARGE_BLAST, SoundCategory.AMBIENT, 3.0F, 1.0F);
 					Utilities.spawnParticlesAroundPointS(EnumParticleTypes.FIREWORKS_SPARK, world, x + 0.5D, y, z + 0.5D, 32);	
 				}
 
@@ -112,7 +119,7 @@ public class TileMemorial extends TileEntity implements ITickable
 		data.writeToNBT(nbt);
 		nbt.setString("ownerName", ownerName);
 		nbt.setInteger("relation", ownerRelation.getId());
-		
+		nbt.setUniqueId("ownerUUID", ownerUUID);
 		return nbt;
 	}
 
@@ -121,10 +128,11 @@ public class TileMemorial extends TileEntity implements ITickable
 	{
 		super.readFromNBT(nbt);
 
-		data = new VillagerAttributes(nbt);
+		data = new TransitiveVillagerData(nbt);
 		type = EnumMemorialType.fromId(nbt.getInteger("type"));
 		ownerName = nbt.getString("ownerName");
 		ownerRelation = EnumRelation.getById(nbt.getInteger("relation"));
+		ownerUUID = nbt.getUniqueId("ownerUUID");
 	}
 
 	public void setType(EnumMemorialType type)
@@ -137,12 +145,12 @@ public class TileMemorial extends TileEntity implements ITickable
 		return type;
 	}
 
-	public VillagerAttributes getVillagerSaveData()
+	public TransitiveVillagerData getTransitiveVillagerData()
 	{
 		return data;
 	}
 
-	public void setVillagerSaveData(VillagerAttributes data)
+	public void setTransitiveVillagerData(TransitiveVillagerData data)
 	{
 		this.data = data;
 	}
@@ -179,6 +187,17 @@ public class TileMemorial extends TileEntity implements ITickable
 
 	public int getRevivalTicks()
 	{
-		return revivalTicks;
+		return this.revivalTicks;
+	}
+	
+	public UUID getOwnerUUID()
+	{
+		return this.ownerUUID;
+	}
+
+	public void setOwnerUUID(UUID uuid) 
+	{
+		this.ownerUUID = uuid;
 	}
 }
+

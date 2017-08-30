@@ -3,13 +3,11 @@ package mca.actions;
 import java.util.ArrayList;
 import java.util.List;
 
-import mca.blocks.BlockVillagerBed;
 import mca.core.Constants;
 import mca.entity.EntityVillagerMCA;
 import mca.enums.EnumMovementState;
 import mca.enums.EnumProfessionSkinGroup;
 import mca.enums.EnumSleepingState;
-import mca.tile.TileVillagerBed;
 import mca.util.Utilities;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockBed;
@@ -20,6 +18,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.network.datasync.DataParameter;
 import net.minecraft.network.datasync.DataSerializers;
 import net.minecraft.network.datasync.EntityDataManager;
+import net.minecraft.tileentity.TileEntityBed;
 import net.minecraft.util.math.BlockPos;
 import radixcore.math.Point3D;
 import radixcore.modules.RadixLogic;
@@ -27,10 +26,10 @@ import radixcore.modules.RadixLogic;
 public class ActionSleep extends AbstractAction
 {
 	private static final DataParameter<Integer> SLEEPING_STATE = EntityDataManager.<Integer>createKey(EntityVillagerMCA.class, DataSerializers.VARINT);
-
-	private boolean isInBed;
+	private static final DataParameter<Boolean> IS_IN_BED = EntityDataManager.<Boolean>createKey(EntityVillagerMCA.class, DataSerializers.BOOLEAN);
+	private static final DataParameter<Integer> BED_META = EntityDataManager.<Integer>createKey(EntityVillagerMCA.class, DataSerializers.VARINT);
+	
 	private boolean hasBed;
-	private int bedMeta;
 	private double homePosX;
 	private double homePosY;
 	private double homePosZ;
@@ -79,11 +78,9 @@ public class ActionSleep extends AbstractAction
 			else if (!hasHomePoint() || !isHomePointValid())
 			{
 				final String phrase = !hasHomePoint() ? "sleep.nohome" : "sleep.invalid";
-				//TODO
-				//boolean isInfluencedByPlayer = owner.isMarriedToAPlayer() || owner.getMotherUUID() < Constants.EMPTY_UUID || owner.getFatherUUID() < 0; //< 0 means it's a player.
 				EntityPlayer influentialPlayer = getInfluentialPlayer();
 
-				if (influentialPlayer != null) //TODO
+				if (influentialPlayer != null)
 				{
 					actor.say(phrase, influentialPlayer);
 					setSleepingState(EnumSleepingState.NO_HOME);
@@ -123,8 +120,8 @@ public class ActionSleep extends AbstractAction
 	public void writeToNBT(NBTTagCompound nbt) 
 	{
 		nbt.setInteger("sleepingState", getSleepingState().getId());
-		nbt.setBoolean("isInBed", isInBed);
-		nbt.setInteger("bedMeta", bedMeta);
+		nbt.setBoolean("isInBed", getIsInBed());
+		nbt.setInteger("bedMeta", getBedMeta());
 		nbt.setBoolean("hasBed", hasBed);
 		nbt.setDouble("homePosX", homePosX);
 		nbt.setDouble("homePosY", homePosY);
@@ -138,8 +135,8 @@ public class ActionSleep extends AbstractAction
 	public void readFromNBT(NBTTagCompound nbt) 
 	{
 		setSleepingState(EnumSleepingState.fromId(nbt.getInteger("sleepingState")));
-		isInBed = nbt.getBoolean("isInBed");
-		bedMeta = nbt.getInteger("bedMeta");
+		setIsInBed(nbt.getBoolean("isInBed"));
+		setBedMeta(nbt.getInteger("bedMeta"));
 		hasBed = nbt.getBoolean("hasBed");
 		bedPosX = nbt.getInteger("bedPosX");
 		bedPosY = nbt.getInteger("bedPosY");
@@ -189,13 +186,15 @@ public class ActionSleep extends AbstractAction
 		else
 		{
 			transitionSkinState(false);
-			isInBed = false;
+			setIsInBed(false);
 
 			try
 			{
-				final TileVillagerBed villagerBed = (TileVillagerBed) actor.world.getTileEntity(getBedPos());
-				villagerBed.setSleepingVillagerUUID(Constants.EMPTY_UUID);
-				villagerBed.setIsVillagerSleepingIn(false);
+				final TileEntityBed villagerBed = (TileEntityBed) actor.world.getTileEntity(getBedPos());
+				
+				final NBTTagCompound villagerBedNBT = villagerBed.getTileData();
+				villagerBedNBT.setUniqueId("sleepingVillagerUUID", Constants.EMPTY_UUID);
+				villagerBedNBT.setBoolean("villagerIsSleepingIn", false);
 			}
 
 			catch (Exception e)
@@ -281,16 +280,6 @@ public class ActionSleep extends AbstractAction
 		}
 	}
 
-	public int getBedMeta()
-	{
-		return bedMeta;
-	}
-
-	public boolean getIsInBed()
-	{
-		return isInBed;
-	}
-
 	private void trySleepInBed()
 	{		
 		if (hasBed)
@@ -298,17 +287,18 @@ public class ActionSleep extends AbstractAction
 			//Check if the bed still exists.
 			final Block blockAtBed = actor.world.getBlockState(getBedPos()).getBlock();
 
-			if (blockAtBed instanceof BlockVillagerBed)
+			if (blockAtBed instanceof BlockBed)
 			{
 				try
 				{
-					final TileVillagerBed villagerBed = (TileVillagerBed) actor.world.getTileEntity(getBedPos());
-
-					if (!villagerBed.getIsVillagerSleepingIn())
+					final TileEntityBed villagerBed = (TileEntityBed) actor.world.getTileEntity(getBedPos());
+					final NBTTagCompound villagerBedNBT = villagerBed.getTileData();
+					
+					if (!villagerBedNBT.getBoolean("villagerIsSleepingIn"))
 					{
-						villagerBed.setSleepingVillagerUUID(actor.getPersistentID());
-						villagerBed.setIsVillagerSleepingIn(true);
-						isInBed = true;
+						villagerBedNBT.setUniqueId("sleepingVillagerUUID", actor.getPersistentID());
+						villagerBedNBT.setBoolean("villagerIsSleepingIn", true);
+						setIsInBed(true);
 
 						actor.halt();
 						actor.setPosition(bedPosX, bedPosY, bedPosZ);
@@ -334,14 +324,14 @@ public class ActionSleep extends AbstractAction
 
 		else //Search for a bed.
 		{
-			List<Point3D> bedsNearby = RadixLogic.getNearbyBlocks(actor, BlockVillagerBed.class, 8);
+			List<Point3D> bedsNearby = RadixLogic.getNearbyBlocks(actor, BlockBed.class, 8);
 			List<Point3D> bedFeetNearby = new ArrayList<Point3D>();
 
 			for (final Point3D point : bedsNearby)
 			{
 				IBlockState state = actor.world.getBlockState(new BlockPos(point.iX(), point.iY(), point.iZ()));
 
-				if (state.getBlock() instanceof BlockVillagerBed)
+				if (state.getBlock() instanceof BlockBed)
 				{
 					EnumPartType part = (EnumPartType) state.getValue(BlockBed.PART);
 
@@ -355,22 +345,32 @@ public class ActionSleep extends AbstractAction
 			if (bedFeetNearby.size() > 0)
 			{
 				final Point3D nearestBed = Point3D.getNearestPointInList(new Point3D(actor.posX, actor.posY, actor.posZ), bedFeetNearby);
-				final TileVillagerBed villagerBed = (TileVillagerBed) actor.world.getTileEntity(nearestBed.toBlockPos());
-
-				if (villagerBed != null && !villagerBed.getIsVillagerSleepingIn())
+				final TileEntityBed villagerBed = (TileEntityBed) actor.world.getTileEntity(nearestBed.toBlockPos());
+				final NBTTagCompound villagerBedNBT = villagerBed.getTileData();
+				
+				if (villagerBed != null && !villagerBedNBT.getBoolean("villagerIsSleepingIn"))
 				{
-					IBlockState state = actor.world.getBlockState(getBedPos());
-					villagerBed.setSleepingVillagerUUID(actor.getPersistentID());
-					villagerBed.setIsVillagerSleepingIn(true);
-
-					bedPosX = nearestBed.iX();
-					bedPosY = nearestBed.iY();
-					bedPosZ = nearestBed.iZ();
-					bedMeta = state.getBlock().getMetaFromState(state);
-					hasBed = true;
-					isInBed = true;
-					actor.halt();
-					actor.setPosition(bedPosX, bedPosY, bedPosZ);
+					try 
+					{
+						IBlockState state = actor.world.getBlockState(nearestBed.toBlockPos());
+						BlockBed bed = (BlockBed)state.getBlock();
+						villagerBedNBT.setUniqueId("sleepingVillagerUUID", actor.getPersistentID());
+						villagerBedNBT.setBoolean("villagerIsSleepingIn", true);
+	
+						bedPosX = nearestBed.iX();
+						bedPosY = nearestBed.iY();
+						bedPosZ = nearestBed.iZ();
+						hasBed = true;
+						setBedMeta(bed.getMetaFromState(state));
+						setIsInBed(true);
+						actor.halt();
+						actor.setPosition(bedPosX, bedPosY, bedPosZ);
+					}
+					
+					catch (ClassCastException e)
+					{
+						hasBed = false;
+					}
 				}
 			}
 		}
@@ -384,6 +384,28 @@ public class ActionSleep extends AbstractAction
 	protected void registerDataParameters()
 	{
 		actor.getDataManager().register(SLEEPING_STATE, Integer.valueOf(EnumSleepingState.AWAKE.getId()));
+		actor.getDataManager().register(IS_IN_BED, false);
+		actor.getDataManager().register(BED_META, Integer.valueOf(0));
+	}
+	
+	public boolean getIsInBed()
+	{
+		return actor.getDataManager().get(IS_IN_BED);
+	}
+	
+	public void setIsInBed(boolean value)
+	{
+		actor.getDataManager().set(IS_IN_BED, value);
+	}
+	
+	public int getBedMeta()
+	{
+		return actor.getDataManager().get(BED_META);
+	}
+	
+	public void setBedMeta(int value)
+	{
+		actor.getDataManager().set(BED_META, value);
 	}
 	
 	public void onDamage()

@@ -6,7 +6,7 @@ import org.lwjgl.input.Keyboard;
 
 import mca.core.MCA;
 import mca.data.NBTPlayerData;
-import mca.entity.VillagerAttributes;
+import mca.data.TransitiveVillagerData;
 import mca.enums.EnumMarriageState;
 import mca.enums.EnumMemorialType;
 import mca.tile.TileMemorial;
@@ -19,6 +19,7 @@ import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.EnumActionResult;
 import net.minecraft.util.EnumFacing;
 import net.minecraft.util.EnumHand;
+import net.minecraft.util.SoundCategory;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.text.TextComponentString;
 import net.minecraft.world.World;
@@ -33,8 +34,6 @@ public class ItemStaffOfLife extends Item
 	{
 		super();
 		maxStackSize = 1;
-		setCreativeTab(MCA.getCreativeTab());
-		setUnlocalizedName("StaffOfLife");
 		setMaxDamage(4);
 	}
 
@@ -50,11 +49,11 @@ public class ItemStaffOfLife extends Item
 			if (tile instanceof TileMemorial)
 			{
 				TileMemorial memorial = (TileMemorial)tile;
-				VillagerAttributes data = memorial.getVillagerSaveData();
+				TransitiveVillagerData data = memorial.getTransitiveVillagerData();
 				NBTPlayerData playerData = MCA.getPlayerData(playerIn);
 
 				//Make sure the owner is the one reviving them.
-				if (!data.allowsControllingInteractions(playerIn))
+				if (!playerData.getIsSuperUser() && !memorial.getOwnerUUID().equals(playerData.getUUID()))
 				{
 					playerIn.sendMessage(new TextComponentString(Color.RED + "You cannot revive " + data.getName() + " because they are not related to you."));
 					return EnumActionResult.FAIL;
@@ -71,7 +70,7 @@ public class ItemStaffOfLife extends Item
 				memorial.setPlayer(playerIn);
 				memorial.setRevivalTicks(Time.SECOND * 5);
 				stack.damageItem(1, playerIn);
-				playerIn.playSound(SoundEvents.BLOCK_PORTAL_TRAVEL, 1.0F, 1.0F);
+				worldIn.playSound(null, pos, SoundEvents.BLOCK_PORTAL_TRAVEL, SoundCategory.AMBIENT, 3.0F, 1.0F);
 				
 				return EnumActionResult.SUCCESS;
 			}

@@ -3,13 +3,13 @@ package mca.packets;
 import java.util.List;
 
 import io.netty.buffer.ByteBuf;
+import mca.actions.ActionFollow;
 import mca.actions.ActionProcreate;
 import mca.actions.ActionSleep;
 import mca.actions.ActionUpdateMood;
 import mca.api.RegistryMCA;
 import mca.core.Constants;
 import mca.core.MCA;
-import mca.core.minecraft.AchievementsMCA;
 import mca.core.minecraft.ItemsMCA;
 import mca.data.NBTPlayerData;
 import mca.data.PlayerMemory;
@@ -157,10 +157,8 @@ public class PacketInteract extends AbstractPacket<PacketInteract>
 
 			else if (interaction == EnumInteraction.TRADE)
 			{
-				/* TODO
-				villager.attributes.setCustomer(player);
+				villager.setCustomer(player);
 				player.displayVillagerTradeGui(villager);
-				*/
 			}
 
 			else if (interaction == EnumInteraction.PICK_UP)
@@ -248,7 +246,7 @@ public class PacketInteract extends AbstractPacket<PacketInteract>
 
 					if (memory.getHearts() >= 100)
 					{
-						/* TODO player.addStat(AchievementsMCA.fullGoldHearts);*/
+						//player.addStat(AchievementsMCA.fullGoldHearts);
 					}
 
 					if (memory.getInteractionFatigue() == 4)
@@ -261,6 +259,7 @@ public class PacketInteract extends AbstractPacket<PacketInteract>
 			else if (interaction == EnumInteraction.FOLLOW)
 			{
 				villager.attributes.setMovementState(EnumMovementState.FOLLOW);
+				villager.getBehavior(ActionFollow.class).setFollowingUUID(player.getUniqueID());
 			}
 			
 			else if (interaction == EnumInteraction.STAY)
@@ -280,7 +279,7 @@ public class PacketInteract extends AbstractPacket<PacketInteract>
 
 			else if (interaction == EnumInteraction.INVENTORY)
 			{
-				villager.openInventory(player);
+				villager.attributes.setDoOpenInventory(true);
 			}
 
 			else if (interaction == EnumInteraction.RIDE_HORSE)
@@ -392,7 +391,7 @@ public class PacketInteract extends AbstractPacket<PacketInteract>
 					String babyName = isMale ? MCA.getLocalizer().getString("name.male") : MCA.getLocalizer().getString("name.female");
 					villager.say("interaction.adoptbaby.success", player, babyName);
 
-					ItemStack stack = new ItemStack(isMale ? ItemsMCA.babyBoy : ItemsMCA.babyGirl);
+					ItemStack stack = new ItemStack(isMale ? ItemsMCA.BABY_BOY : ItemsMCA.BABY_GIRL);
 
 					NBTTagCompound nbt = new NBTTagCompound();
 					nbt.setString("name", babyName);
@@ -529,8 +528,7 @@ public class PacketInteract extends AbstractPacket<PacketInteract>
 			else if (interaction == EnumInteraction.CHECKHAPPINESS)
 			{
 				NBTPlayerData data = MCA.getPlayerData(player);
-				
-				//Horrible fix for an issue with RadixCore. TODO Investigate.
+
 				List<EntityVillagerMCA> villagerList = RadixLogic.getEntitiesWithinDistance(EntityVillagerMCA.class, villager, 50);
 				int percentAverage = getVillageHappinessPercentage(villager, player, villagerList);
 				

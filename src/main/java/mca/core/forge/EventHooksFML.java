@@ -6,6 +6,7 @@ import java.util.List;
 import mca.core.Constants;
 import mca.core.MCA;
 import mca.core.minecraft.ItemsMCA;
+import mca.core.minecraft.SoundsMCA;
 import mca.data.NBTPlayerData;
 import mca.data.PlayerDataCollection;
 import mca.entity.EntityGrimReaper;
@@ -25,6 +26,8 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumParticleTypes;
+import net.minecraft.util.SoundCategory;
+import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.village.Village;
 import net.minecraft.world.World;
@@ -101,9 +104,9 @@ public class EventHooksFML
 			}
 
 			//Add the crystal ball to the inventory if needed.
-			if (!nbtData.getHasChosenDestiny() && !player.inventory.hasItemStack(new ItemStack(ItemsMCA.crystalBall)) && MCA.getConfig().giveCrystalBall)
+			if (!nbtData.getHasChosenDestiny() && !player.inventory.hasItemStack(new ItemStack(ItemsMCA.CRYSTAL_BALL)) && MCA.getConfig().giveCrystalBall)
 			{
-				player.inventory.addItemStackToInventory(new ItemStack(ItemsMCA.crystalBall));
+				player.inventory.addItemStackToInventory(new ItemStack(ItemsMCA.CRYSTAL_BALL));
 			}
 		}
 	}
@@ -233,8 +236,7 @@ public class EventHooksFML
 				if (summonCounter == 80)
 				{
 					NetworkRegistry.TargetPoint summonTarget = new NetworkRegistry.TargetPoint(summonWorld.provider.getDimension(), summonPos.iX(), summonPos.iY(), summonPos.iZ(), 32);
-					//FIXME
-					//MCA.getPacketHandler().sendPacketToAllAround(new PacketPlaySoundOnPlayer("mca:reaper.summon"), summonTarget);
+					summonWorld.playSound(null, new BlockPos(dX, y, dZ), SoundsMCA.reaper_summon, SoundCategory.HOSTILE, 1.0F, 1.0F);
 				}
 			}
 
@@ -383,7 +385,7 @@ public class EventHooksFML
 		{
 			ItemStack stack = event.craftMatrix.getStackInSlot(i);
 
-			if (stack != null && (stack.getItem() == ItemsMCA.needleAndString))
+			if (stack != null && (stack.getItem() == ItemsMCA.NEEDLE_AND_STRING))
 			{
 				stack.damageItem(1, event.player);
 

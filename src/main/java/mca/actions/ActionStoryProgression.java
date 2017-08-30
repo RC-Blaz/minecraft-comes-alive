@@ -1,7 +1,6 @@
 package mca.actions;
 
 import mca.core.MCA;
-import mca.core.minecraft.AchievementsMCA;
 import mca.entity.EntityVillagerMCA;
 import mca.enums.EnumBabyState;
 import mca.enums.EnumGender;
@@ -165,9 +164,7 @@ public class ActionStoryProgression extends AbstractAction
 
 				if (actor.attributes.isPlayerAParent(onlinePlayer) || mate.attributes.isPlayerAParent(onlinePlayer))
 				{
-					/* TODO
-					onlinePlayer.addStat(AchievementsMCA.childHasChildren);
-					*/	
+					//onlinePlayer.addStat(AchievementsMCA.childHasChildren);
 				}
 			}
 		}

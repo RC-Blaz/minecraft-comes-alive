@@ -31,7 +31,6 @@ import mca.enums.EnumProfession;
 import mca.network.PacketHandlerMCA;
 import mca.tile.TileMemorial;
 import mca.tile.TileTombstone;
-import mca.tile.TileVillagerBed;
 import mca.util.Either;
 import mca.util.SkinLoader;
 import net.minecraft.block.Block;
@@ -126,7 +125,7 @@ public class MCA
 			@Override
 			public ItemStack getTabIconItem() 
 			{
-				return new ItemStack(ItemsMCA.engagementRing);
+				return new ItemStack(ItemsMCA.ENGAGEMENT_RING);
 			}
 		};
 		
@@ -160,78 +159,15 @@ public class MCA
 		EntityRegistry.registerModEntity(new ResourceLocation(ID, "GrimReaperMCA"), EntityGrimReaper.class, EntityGrimReaper.class.getSimpleName(), config.baseEntityId + 2, this, 50, 2, true);
 		
 		//Tile registry
-		GameRegistry.registerTileEntity(TileVillagerBed.class, TileVillagerBed.class.getSimpleName());
 		GameRegistry.registerTileEntity(TileTombstone.class, TileTombstone.class.getSimpleName());
 		GameRegistry.registerTileEntity(TileMemorial.class, TileMemorial.class.getSimpleName());
-
-		//Recipes
-		/*
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.divorcePapers, 1), 
-				new Object[] { " IF", " P ", 'I', new ItemStack(Items.DYE, 1, 0), 'F', Items.FEATHER, 'P', Items.PAPER });
-
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.whistle), 
-				" W#", "###", '#', Items.IRON_INGOT, 'W', Blocks.PLANKS);
-		GameRegistry.addRecipe(new ItemStack(Items.GOLD_INGOT), 
-				"GGG", "GGG", "GGG", 'G', ItemsMCA.goldDust);
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.roseGoldIngot, 9), 
-				"GGG", "GGG", "GGG", 'G', ItemsMCA.roseGoldDust);
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.engagementRing), 
-				"GDG", "G G", "GGG", 'D', Items.DIAMOND, 'G', Items.GOLD_INGOT);
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.engagementRingRG), 
-				"GDG", "G G", "GGG", 'D', Items.DIAMOND, 'G', ItemsMCA.roseGoldIngot);
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.weddingRingRG),
-				"GGG", "G G", "GGG", 'G', ItemsMCA.roseGoldIngot);
-		GameRegistry.addRecipe(new ItemStack(BlocksMCA.roseGoldBlock),
-				"GGG", "GGG", "GGG", 'G', ItemsMCA.roseGoldIngot);
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.matchmakersRing),
-				"III", "I I", "III", 'I', Items.IRON_INGOT);
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.tombstone),
-				" S ", "SIS", "SSS", 'S', Blocks.STONE, 'I', Items.SIGN);
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.needle),
-				"I  ", " I ", "  I", 'I', new ItemStack(Items.IRON_INGOT));
-		GameRegistry.addRecipe(new ItemStack(ItemsMCA.newOutfit),
-				"C C", "CCC", "CCC", 'C', ItemsMCA.cloth);
-
-		//Variable recipes
-		if (!config.disableWeddingRingRecipe)
-		{
-			GameRegistry.addRecipe(new ItemStack(ItemsMCA.weddingRing),
-					"GGG", "G G", "GGG", 'G', Items.GOLD_INGOT);
-		}
-
-		else
-		{
-			logger.fatal("Config: MCA's default wedding ring recipe is currently disabled. You can change this in the config. You must use Rose Gold to craft wedding rings!");
-		}
-
-		GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.roseGoldDust), ItemsMCA.roseGoldIngot);
-		GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.goldDust, 6), Items.WATER_BUCKET, new ItemStack(ItemsMCA.roseGoldDust));
-
-		GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.bedRed), new ItemStack(Items.BED), new ItemStack(Blocks.CARPET, 1, 14));
-		GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.bedBlue), new ItemStack(Items.BED), new ItemStack(Blocks.CARPET, 1, 11));
-		GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.bedGreen), new ItemStack(Items.BED), new ItemStack(Blocks.CARPET, 1, 13));
-		GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.bedPurple), new ItemStack(Items.BED), new ItemStack(Blocks.CARPET, 1, 10));
-		GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.bedPink), new ItemStack(Items.BED), new ItemStack(Blocks.CARPET, 1, 6));
-		GameRegistry.addShapelessRecipe(new ItemStack(Items.BED), new ItemStack(ItemsMCA.bedRed));
-		GameRegistry.addShapelessRecipe(new ItemStack(Items.BED), new ItemStack(ItemsMCA.bedBlue));
-		GameRegistry.addShapelessRecipe(new ItemStack(Items.BED), new ItemStack(ItemsMCA.bedGreen));
-		GameRegistry.addShapelessRecipe(new ItemStack(Items.BED), new ItemStack(ItemsMCA.bedPurple));
-		GameRegistry.addShapelessRecipe(new ItemStack(Items.BED), new ItemStack(ItemsMCA.bedPink));
-		GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.needleAndString), new ItemStack(ItemsMCA.needle), new ItemStack(Items.STRING));
-		GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.roseGoldIngot, 9), new ItemStack(BlocksMCA.roseGoldBlock));
-
-		for(int i = 0; i < 16; i++)
-		{
-			GameRegistry.addShapelessRecipe(new ItemStack(ItemsMCA.cloth), new ItemStack(Blocks.WOOL), new ItemStack(ItemsMCA.needleAndString, 1, i));
-		}		
-		*/
 		
 		//Smeltings
-		GameRegistry.addSmelting(BlocksMCA.roseGoldOre, new ItemStack(ItemsMCA.roseGoldIngot), 5.0F);
+		GameRegistry.addSmelting(BlocksMCA.rose_gold_ore, new ItemStack(ItemsMCA.ROSE_GOLD_INGOT), 5.0F);
 
 		if (MCA.config.roseGoldSpawnWeight > 0)
 		{
-			SimpleOreGenerator.register(new SimpleOreGenerator(BlocksMCA.roseGoldOre, 6, 12, 40, true, false), MCA.config.roseGoldSpawnWeight);
+			SimpleOreGenerator.register(new SimpleOreGenerator(BlocksMCA.rose_gold_ore, 6, 12, 40, true, false), MCA.config.roseGoldSpawnWeight);
 		}
 	}
 
@@ -359,8 +295,8 @@ public class MCA
 		RegistryMCA.addObjectAsGift(Blocks.PISTON, 10);
 		RegistryMCA.addObjectAsGift(Blocks.GLOWSTONE, 10);
 		RegistryMCA.addObjectAsGift(Blocks.EMERALD_BLOCK, 100);
-		RegistryMCA.addObjectAsGift(BlocksMCA.roseGoldBlock, 35);
-		RegistryMCA.addObjectAsGift(BlocksMCA.roseGoldOre, 7);
+		RegistryMCA.addObjectAsGift(BlocksMCA.rose_gold_block, 35);
+		RegistryMCA.addObjectAsGift(BlocksMCA.rose_gold_ore, 7);
 		RegistryMCA.addObjectAsGift(Blocks.REDSTONE_BLOCK, 20);
 
 		RegistryMCA.addFishingEntryToFishingAI(0, new FishingEntry(Items.FISH));
@@ -412,7 +348,7 @@ public class MCA
 		RegistryMCA.addBlockToMiningAI(5, new MiningEntry(Blocks.DIAMOND_ORE, Items.DIAMOND, 0.04F));
 		RegistryMCA.addBlockToMiningAI(6, new MiningEntry(Blocks.EMERALD_ORE, Items.EMERALD, 0.03F));
 		RegistryMCA.addBlockToMiningAI(7, new MiningEntry(Blocks.QUARTZ_ORE, Items.QUARTZ, 0.02F));
-		RegistryMCA.addBlockToMiningAI(8, new MiningEntry(BlocksMCA.roseGoldOre, 0.07F));
+		RegistryMCA.addBlockToMiningAI(8, new MiningEntry(BlocksMCA.rose_gold_ore, 0.07F));
 
 		RegistryMCA.addBlockToWoodcuttingAI(1, new WoodcuttingEntry(Blocks.LOG, 0, Blocks.SAPLING, 0));
 		RegistryMCA.addBlockToWoodcuttingAI(2, new WoodcuttingEntry(Blocks.LOG, 1, Blocks.SAPLING, 1));
@@ -437,9 +373,10 @@ public class MCA
 		RegistryMCA.addCropToFarmingAI(1, new CropEntry(EnumCropCategory.WHEAT, Blocks.WHEAT, Items.WHEAT_SEEDS, Blocks.WHEAT, 7, Items.WHEAT, 1, 4));
 		RegistryMCA.addCropToFarmingAI(2, new CropEntry(EnumCropCategory.WHEAT, Blocks.POTATOES, Items.POTATO, Blocks.POTATOES, 7, Items.POTATO, 1, 4));
 		RegistryMCA.addCropToFarmingAI(3, new CropEntry(EnumCropCategory.WHEAT, Blocks.CARROTS, Items.CARROT, Blocks.CARROTS, 7, Items.CARROT, 1, 4));
-		RegistryMCA.addCropToFarmingAI(4, new CropEntry(EnumCropCategory.MELON, Blocks.MELON_STEM, Items.MELON_SEEDS, Blocks.MELON_BLOCK, 0, Items.MELON, 2, 6));
-		RegistryMCA.addCropToFarmingAI(5, new CropEntry(EnumCropCategory.MELON, Blocks.PUMPKIN_STEM, Items.PUMPKIN_SEEDS, Blocks.PUMPKIN, 0, null, 1, 1));
-		RegistryMCA.addCropToFarmingAI(6, new CropEntry(EnumCropCategory.SUGARCANE, Blocks.REEDS, Items.REEDS, Blocks.REEDS, 0, Items.REEDS, 1, 1));
+		RegistryMCA.addCropToFarmingAI(4, new CropEntry(EnumCropCategory.WHEAT, Blocks.BEETROOTS, Items.BEETROOT_SEEDS, Blocks.BEETROOTS, 7, Items.BEETROOT, 1, 4));
+		RegistryMCA.addCropToFarmingAI(5, new CropEntry(EnumCropCategory.MELON, Blocks.MELON_STEM, Items.MELON_SEEDS, Blocks.MELON_BLOCK, 0, Items.MELON, 2, 6));
+		RegistryMCA.addCropToFarmingAI(6, new CropEntry(EnumCropCategory.MELON, Blocks.PUMPKIN_STEM, Items.PUMPKIN_SEEDS, Blocks.PUMPKIN, 0, null, 1, 1));
+		RegistryMCA.addCropToFarmingAI(7, new CropEntry(EnumCropCategory.SUGARCANE, Blocks.REEDS, Items.REEDS, Blocks.REEDS, 0, Items.REEDS, 1, 1));
 
 		RegistryMCA.addWeddingGift(new WeddingGift(Blocks.DIRT, 1, 6), EnumGiftCategory.BAD);
 		RegistryMCA.addWeddingGift(new WeddingGift(Blocks.DEADBUSH, 1, 1), EnumGiftCategory.BAD);
@@ -464,7 +401,8 @@ public class MCA
 		RegistryMCA.addWeddingGift(new WeddingGift(Blocks.LOG, 2, 16), EnumGiftCategory.GOOD);
 		RegistryMCA.addWeddingGift(new WeddingGift(Blocks.COBBLESTONE, 2, 16), EnumGiftCategory.GOOD);
 		RegistryMCA.addWeddingGift(new WeddingGift(Items.COAL, 2, 8), EnumGiftCategory.GOOD);
-
+		RegistryMCA.addWeddingGift(new WeddingGift(ItemsMCA.BOOK_ROSE_GOLD, 1, 1), EnumGiftCategory.BEST);
+		
 		RegistryMCA.addWeddingGift(new WeddingGift(Items.CLAY_BALL, 16, 32), EnumGiftCategory.BETTER);
 		RegistryMCA.addWeddingGift(new WeddingGift(Items.IRON_AXE, 1, 1), EnumGiftCategory.BETTER);
 		RegistryMCA.addWeddingGift(new WeddingGift(Items.IRON_SWORD, 1, 1), EnumGiftCategory.BETTER);
@@ -486,7 +424,10 @@ public class MCA
 		RegistryMCA.addWeddingGift(new WeddingGift(Items.MELON, 4, 8), EnumGiftCategory.BETTER);
 		RegistryMCA.addWeddingGift(new WeddingGift(Blocks.BOOKSHELF, 2, 4), EnumGiftCategory.BETTER);
 		RegistryMCA.addWeddingGift(new WeddingGift(Items.IRON_INGOT, 8, 16), EnumGiftCategory.BETTER);
-
+		RegistryMCA.addWeddingGift(new WeddingGift(ItemsMCA.BOOK_INFECTION, 1, 1), EnumGiftCategory.BETTER);
+		RegistryMCA.addWeddingGift(new WeddingGift(ItemsMCA.BOOK_ROMANCE, 1, 1), EnumGiftCategory.BETTER);
+		RegistryMCA.addWeddingGift(new WeddingGift(ItemsMCA.BOOK_FAMILY, 1, 1), EnumGiftCategory.BETTER);
+		
 		RegistryMCA.addWeddingGift(new WeddingGift(Blocks.BRICK_BLOCK, 32, 32), EnumGiftCategory.BEST);
 		RegistryMCA.addWeddingGift(new WeddingGift(Items.DIAMOND_AXE, 1, 1), EnumGiftCategory.BEST);
 		RegistryMCA.addWeddingGift(new WeddingGift(Items.DIAMOND_SWORD, 1, 1), EnumGiftCategory.BEST);
@@ -511,6 +452,7 @@ public class MCA
 		RegistryMCA.addWeddingGift(new WeddingGift(Blocks.IRON_BLOCK, 1, 8), EnumGiftCategory.BEST);
 		RegistryMCA.addWeddingGift(new WeddingGift(Blocks.OBSIDIAN, 4, 8), EnumGiftCategory.BEST);
 		RegistryMCA.addWeddingGift(new WeddingGift(Items.EMERALD, 4, 6), EnumGiftCategory.BEST);
+		RegistryMCA.addWeddingGift(new WeddingGift(ItemsMCA.BOOK_DEATH, 1, 1), EnumGiftCategory.BEST);
 	}
 
 	@EventHandler

@@ -83,18 +83,22 @@ public class BlockMemorial extends BlockContainer
 
 			switch (memorial.getType())
 			{
-			case BROKEN_RING: memorialItem = ItemsMCA.brokenRing; break;
-			case DOLL: memorialItem = ItemsMCA.childsDoll; break;
-			case TRAIN: memorialItem = ItemsMCA.toyTrain; break;
+			case BROKEN_RING: memorialItem = ItemsMCA.BROKEN_RING; break;
+			case DOLL: memorialItem = ItemsMCA.CHILDS_DOLL; break;
+			case TRAIN: memorialItem = ItemsMCA.TOY_TRAIN; break;
 			}
 
 			if (memorial.getRevivalTicks() == 0) //Will be 1 when removed from a villager revival.
 			{
+				NBTTagCompound stackNBT = new NBTTagCompound();
+				
 				memorialStack = new ItemStack(memorialItem);
-				memorialStack.setTagCompound(new NBTTagCompound());
-				memorialStack.getTagCompound().setInteger("relation", memorial.getRelation().getId());
-				memorialStack.getTagCompound().setString("ownerName", memorial.getOwnerName());
-				memorial.getVillagerSaveData().writeToNBT(memorialStack.getTagCompound());
+				stackNBT.setInteger("relation", memorial.getRelation().getId());
+				stackNBT.setString("ownerName", memorial.getOwnerName());
+				stackNBT.setUniqueId("ownerUUID", memorial.getOwnerUUID());
+				memorial.getTransitiveVillagerData().writeToNBT(stackNBT);
+				
+				memorialStack.setTagCompound(stackNBT);
 				
 				EntityItem drop = new EntityItem(world, pos.getX(), pos.getY(), pos.getZ(), memorialStack);
 				world.spawnEntity(drop);

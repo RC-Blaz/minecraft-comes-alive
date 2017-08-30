@@ -4,6 +4,7 @@ import static mca.core.Constants.EMPTY_UUID;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import io.netty.buffer.ByteBuf;
 import mca.actions.AbstractAction;
@@ -16,27 +17,32 @@ import mca.core.MCA;
 import mca.core.minecraft.ItemsMCA;
 import mca.data.NBTPlayerData;
 import mca.data.PlayerMemory;
+import mca.data.TransitiveVillagerData;
 import mca.enums.EnumBabyState;
+import mca.enums.EnumDialogueType;
 import mca.enums.EnumGender;
 import mca.enums.EnumMarriageState;
 import mca.enums.EnumMovementState;
 import mca.enums.EnumProfession;
 import mca.enums.EnumProfessionSkinGroup;
+import mca.enums.EnumRelation;
 import mca.items.ItemBaby;
 import mca.items.ItemMemorial;
 import mca.items.ItemVillagerEditor;
 import mca.packets.PacketOpenGUIOnEntity;
 import mca.util.Either;
 import mca.util.Utilities;
-import net.minecraft.entity.EntityCreature;
+import net.minecraft.block.Block;
 import net.minecraft.entity.SharedMonsterAttributes;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;
 import net.minecraft.entity.ai.EntityAIOpenDoor;
 import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
 import net.minecraft.entity.ai.EntityAISwimming;
 import net.minecraft.entity.ai.EntityAITasks;
+import net.minecraft.entity.passive.EntityVillager;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.entity.player.EntityPlayerMP;
+import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.init.MobEffects;
 import net.minecraft.init.SoundEvents;
@@ -48,6 +54,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.pathfinding.PathNavigateGround;
 import net.minecraft.potion.PotionEffect;
 import net.minecraft.profiler.Profiler;
+import net.minecraft.tileentity.TileEntityChest;
 import net.minecraft.util.DamageSource;
 import net.minecraft.util.EnumHand;
 import net.minecraft.util.EnumParticleTypes;
@@ -75,7 +82,7 @@ import radixcore.modules.RadixLogic;
  * 
  * The VillagerAttributes object holds all villager data and their getters/setters.
  */
-public class EntityVillagerMCA extends EntityCreature implements IEntityAdditionalSpawnData
+public class EntityVillagerMCA extends EntityVillager implements IEntityAdditionalSpawnData
 {
 	@SideOnly(Side.CLIENT)
 	public boolean isInteractionGuiOpen;
@@ -151,8 +158,10 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 	public void onUpdate()
 	{
 		super.onUpdate();
+
 		profiler.startSection("MCA Villager Update");
 		behaviors.onUpdate();
+		updateSwinging();
 		
 		if (!world.isRemote)
 		{
@@ -169,7 +178,7 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 			{
 				ItemStack stack = attributes.getInventory().getStackInSlot(i);
 
-				if (stack != null && stack.getItem() instanceof ItemBaby)
+				if (stack.getItem() instanceof ItemBaby)
 				{
 					ItemBaby item = (ItemBaby)stack.getItem();
 					item.onUpdate(stack, world, this, 1, false);
@@ -188,11 +197,6 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 
 				attributes.setDoOpenInventory(false);
 			}
-		}
-
-		else
-		{
-			updateSwinging();
 		}
 		
 		profiler.endSection();
@@ -215,10 +219,14 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 			
 			if (player.capabilities.isCreativeMode && item instanceof ItemMemorial && !heldItem.hasTagCompound())
 			{
-				heldItem.setTagCompound(new NBTTagCompound());
-				heldItem.getTagCompound().setString("ownerName", player.getName());
-				heldItem.getTagCompound().setInteger("relation", attributes.getPlayerMemory(player).getRelation().getId());
-				attributes.writeToNBT(heldItem.getTagCompound());
+				TransitiveVillagerData transitiveData = new TransitiveVillagerData(attributes);
+				NBTTagCompound stackNBT = new NBTTagCompound();
+				stackNBT.setUniqueId("ownerUUID", player.getUniqueID());
+				stackNBT.setString("ownerName", player.getName());
+				stackNBT.setInteger("relation", attributes.getPlayerMemory(player).getRelation().getId());
+				transitiveData.writeToNBT(stackNBT);
+				
+				heldItem.setTagCompound(stackNBT);
 				
 				this.setDead();
 			}
@@ -262,6 +270,9 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 			}
 			
 			//Reset the marriage stats of the player/villager this one was married to
+			//If married to a player, this player takes priority in receiving the memorial item for revival.
+			boolean memorialDropped = false;
+			
 			if (attributes.isMarriedToAPlayer()) 	
 			{
 				NBTPlayerData playerData = MCA.getPlayerData(world, attributes.getSpouseUUID());
@@ -269,6 +280,13 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 				playerData.setMarriageState(EnumMarriageState.NOT_MARRIED);
 				playerData.setSpouseName("");
 				playerData.setSpouseUUID(EMPTY_UUID);
+				
+				//Just in case something is added here later, be sure we're not false
+				if (!memorialDropped)
+				{
+					createMemorialChest(attributes.getPlayerMemoryWithoutCreating(attributes.getSpouseUUID()), ItemsMCA.BROKEN_RING);
+					memorialDropped = true;
+				}
 			}
 
 			else if (attributes.isMarriedToAVillager())
@@ -284,7 +302,6 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 			//Alert parents/spouse of the death if they are online and handle dropping memorials
 			//Test against new iteration of player memory list each time to ensure the proper order
 			//of handling notifications and memorial spawning
-			boolean memorialDropped = false;
 			
 			for (PlayerMemory memory : attributes.getPlayerMemories().values())
 			{
@@ -293,17 +310,70 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 				{
 					EntityPlayer player = world.getPlayerEntityByUUID(memory.getUUID());
 					
+					//If we hit a parent
+					if (attributes.isPlayerAParent(memory.getUUID()) && !memorialDropped)
+					{
+						createMemorialChest(memory, attributes.getGender() == EnumGender.MALE ? ItemsMCA.TOY_TRAIN : ItemsMCA.CHILDS_DOLL);
+						memorialDropped = true;
+					}
+					
 					if (player != null) //The player may not be online
 					{
 						player.sendMessage(new TextComponentString(Color.RED + attributes.getTitle(player) + " has died."));
 					}
 				}
 			}
-			
-			//TODO dropping memorials
 		}
 	}
 
+	private void createMemorialChest(PlayerMemory memory, ItemMemorial memorialItem)
+	{
+		Point3D nearestAir = RadixLogic.getNearestBlock(this, 3, Blocks.AIR);
+    	
+    	if (nearestAir == null)
+    	{
+    		MCA.getLog().warn("No available location to spawn villager death chest for " + this.getName());
+    	}
+    	
+    	else
+    	{
+    		int y = nearestAir.iY();
+    		Block block = Blocks.AIR;
+    		
+    		while (block == Blocks.AIR)
+    		{
+    			y--;
+    			block = world.getBlockState(new BlockPos(nearestAir.iX(), y, nearestAir.iZ())).getBlock();
+    		}
+    		
+    		y += 1;
+    		world.setBlockState(new BlockPos(nearestAir.iX(), y, nearestAir.iZ()), Blocks.CHEST.getDefaultState());
+    		
+    		try
+    		{
+    			TileEntityChest chest = (TileEntityChest) world.getTileEntity(nearestAir.toBlockPos());
+    			TransitiveVillagerData data = new TransitiveVillagerData(attributes);
+    			ItemStack memorialStack = new ItemStack(memorialItem);
+    			NBTTagCompound stackNBT = new NBTTagCompound();
+    			
+    			stackNBT.setString("ownerName", memory.getPlayerName());
+    			stackNBT.setUniqueId("ownerUUID", memory.getUUID());
+    			stackNBT.setInteger("ownerRelation", memory.getRelation().getId());
+    			data.writeToNBT(stackNBT);
+    			memorialStack.setTagCompound(stackNBT);
+    			
+    			chest.setInventorySlotContents(0, memorialStack);
+    			MCA.getLog().info("Spawned villager death chest at: " + nearestAir.iX() + ", " + y + ", " + nearestAir.iZ());
+    		}
+    		
+    		catch (Exception e)
+    		{
+    			MCA.getLog().error("Error spawning villager death chest: " + e.getMessage());
+    			return;
+    		}
+    	}
+	}
+    
 	@Override
 	protected void updateAITasks()
 	{
@@ -493,7 +563,7 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 			spouse.attributes.setSpouseUUID(this.getUniqueID());
 			spouse.attributes.setSpouseGender(this.attributes.getGender());
 			spouse.attributes.setMarriageState(EnumMarriageState.MARRIED_TO_VILLAGER);
-
+			
 			getBehaviors().onMarriageToVillager();
 		}
 
@@ -501,11 +571,14 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 		{
 			EntityPlayer player = either.getRight();
 			NBTPlayerData playerData = MCA.getPlayerData(player);
-
+			PlayerMemory memory = attributes.getPlayerMemory(player);
+			
 			attributes.setSpouseName(player.getName());
 			attributes.setSpouseUUID(player.getUniqueID());
 			attributes.setSpouseGender(playerData.getGender());
 			attributes.setMarriageState(EnumMarriageState.MARRIED_TO_PLAYER);
+			memory.setDialogueType(EnumDialogueType.SPOUSE);
+			memory.setRelation(attributes.getGender() == EnumGender.MALE ? EnumRelation.HUSBAND : EnumRelation.WIFE);
 			
 			playerData.setSpouseName(this.getName());
 			playerData.setSpouseGender(attributes.getGender());
@@ -583,11 +656,6 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 		return this.behaviors.getAction(clazz);
 	}
 	
-	public void openInventory(EntityPlayer player)
-	{
-		MCA.getPacketHandler().sendPacketToPlayer(new PacketOpenGUIOnEntity(this.getEntityId(), Constants.GUI_ID_INVENTORY), (EntityPlayerMP) player);
-	}
-	
 	@Override
 	public ItemStack getHeldItem(EnumHand hand)
 	{
@@ -601,11 +669,7 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 
 		else if (babyState != EnumBabyState.NONE)
 		{
-			switch (babyState)
-			{
-			case MALE: return new ItemStack(ItemsMCA.babyBoy);
-			case FEMALE: return new ItemStack(ItemsMCA.babyGirl);
-			}
+			return new ItemStack(babyState == EnumBabyState.MALE ? ItemsMCA.BABY_BOY : ItemsMCA.BABY_GIRL);
 		}
 
 		else if (profession == EnumProfession.Guard)
@@ -618,22 +682,21 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 			return new ItemStack(Items.BOW);
 		}
 
-		//FIXME
-//		else if (heldItem.getInt() != -1 && aiManager.isToggleAIActive())
-//		{
-//			return new ItemStack(Item.getItemById(heldItem.getInt()));
-//		}
-//
-//		else if (attributes.getInventory().contains(ModItems.babyBoy) || attributes.getInventory().contains(ModItems.babyGirl))
-//		{
-//			int slot = attributes.getInventory().getFirstSlotContainingItem(ModItems.babyBoy);
-//			slot = slot == -1 ? attributes.getInventory().getFirstSlotContainingItem(ModItems.babyGirl) : slot;
-//
-//			if (slot != -1)
-//			{
-//				return attributes.getInventory().getStackInSlot(slot);
-//			}
-//		}
+		else if (attributes.getHeldItemSlot() != -1 && behaviors.isToggleActionActive())
+		{
+			return attributes.getInventory().getStackInSlot(attributes.getHeldItemSlot());
+		}
+
+		else if (attributes.getInventory().contains(ItemsMCA.BABY_BOY) || attributes.getInventory().contains(ItemsMCA.BABY_GIRL))
+		{
+			int slot = attributes.getInventory().getFirstSlotContainingItem(ItemsMCA.BABY_BOY);
+			slot = slot == -1 ? attributes.getInventory().getFirstSlotContainingItem(ItemsMCA.BABY_GIRL) : slot;
+
+			if (slot != -1)
+			{
+				return attributes.getInventory().getStackInSlot(slot);
+			}
+		}
 
 		//Warriors, spouses, and player children all use weapons from the combat AI.
 		else if (profession == EnumProfession.Warrior || attributes.isMarriedToAPlayer() || profession == EnumProfession.Child)
@@ -669,7 +732,7 @@ public class EntityVillagerMCA extends EntityCreature implements IEntityAddition
 					if (itemInSlot.getCount() == 0)
 					{
 						behaviors.disableAllToggleActions();
-						attributes.getInventory().setInventorySlotContents(slot, null);
+						attributes.getInventory().setInventorySlotContents(slot, ItemStack.EMPTY);
 						return true;
 					}
 

@@ -1,58 +1,81 @@
 package mca.core.minecraft;
 
-import java.lang.reflect.Field;
+import java.util.ArrayList;
 
 import mca.blocks.BlockMemorial;
 import mca.blocks.BlockTombstone;
-import mca.blocks.BlockVillagerBed;
 import mca.blocks.BlockVillagerSpawner;
 import mca.core.MCA;
-import mca.enums.EnumBedColor;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockOre;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemModelMesher;
 import net.minecraft.client.renderer.block.model.ModelResourceLocation;
 import net.minecraft.item.Item;
+import net.minecraft.item.ItemBlock;
+import net.minecraft.util.ResourceLocation;
 import net.minecraftforge.event.RegistryEvent;
-import net.minecraftforge.fml.common.registry.GameRegistry;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import net.minecraftforge.registries.IForgeRegistry;
 
 public final class BlocksMCA
 {
-	public static final BlockVillagerBed bedRed = new BlockVillagerBed(EnumBedColor.RED);
-	public static final BlockVillagerBed bedBlue = new BlockVillagerBed(EnumBedColor.BLUE);
-	public static final BlockVillagerBed bedGreen = new BlockVillagerBed(EnumBedColor.GREEN);
-	public static final BlockVillagerBed bedPink = new BlockVillagerBed(EnumBedColor.PINK);
-	public static final BlockVillagerBed bedPurple = new BlockVillagerBed(EnumBedColor.PURPLE);
-	public static final Block roseGoldBlock = new BlockOre().setHardness(3.0F).setResistance(5.0F).setUnlocalizedName("RoseGoldBlock").setCreativeTab(MCA.getCreativeTab());
-	public static final Block roseGoldOre = new BlockOre().setHardness(3.0F).setResistance(5.0F).setUnlocalizedName("RoseGoldOre").setCreativeTab(MCA.getCreativeTab());
+	private static final ArrayList<Block> BLOCKS = new ArrayList<Block>();
+	
+	public static final Block rose_gold_block = new BlockOre();
+	public static final Block rose_gold_ore = new BlockOre();
 	public static final BlockTombstone tombstone = new BlockTombstone();
-	public static final BlockVillagerSpawner spawner = new BlockVillagerSpawner();
+	public static final BlockVillagerSpawner villager_spawner = new BlockVillagerSpawner();
 	public static final BlockMemorial memorial = new BlockMemorial();
 	
-	public BlocksMCA()
-	{
-		roseGoldBlock.setHarvestLevel("pickaxe", 2);
-		roseGoldOre.setHarvestLevel("pickaxe", 2);
-	}
+	public BlocksMCA() { }
 	
 	public static void register(RegistryEvent.Register<Block> event)
 	{
-		for (Field f : BlocksMCA.class.getFields())
+		rose_gold_block.setHardness(3.0F);
+		rose_gold_block.setResistance(5.0F);
+		rose_gold_block.setHarvestLevel("pickaxe", 2);
+		rose_gold_ore.setHardness(3.0F);
+		rose_gold_ore.setResistance(5.0F);
+		rose_gold_ore.setHarvestLevel("pickaxe", 2);
+		
+		Block[] blocks = {
+				rose_gold_block,
+				rose_gold_ore,
+				tombstone,
+				villager_spawner,
+				memorial
+		};
+		
+		setBlockName(rose_gold_block, "rose_gold_block");
+		setBlockName(rose_gold_ore, "rose_gold_ore");
+		setBlockName(tombstone, "tombstone");
+		setBlockName(villager_spawner, "villager_spawner");
+		setBlockName(memorial, "memorial");
+		
+		for (Block block : blocks)
 		{
-			try
-			{
-				Block block = (Block) f.get(null);
-				block.setRegistryName(block.getUnlocalizedName().substring(5).toLowerCase());
-				event.getRegistry().register(block);
-			}
-
-			catch (Exception e)
-			{
-				throw new RuntimeException(e);
-			}
+			block.setCreativeTab(MCA.getCreativeTab());
+			event.getRegistry().register(block);
+			BLOCKS.add(block);
+		}
+	}
+	
+	public static void registerItemBlocks(RegistryEvent.Register<Item> event)
+	{
+		IForgeRegistry<Item> registry = event.getRegistry();
+		ItemBlock[] items = {
+			new ItemBlock(rose_gold_block),
+			new ItemBlock(rose_gold_ore),
+			new ItemBlock(villager_spawner)
+		};
+		
+		for (ItemBlock item : items)
+		{
+			Block block = item.getBlock();
+			ResourceLocation registryName = block.getRegistryName();
+			registry.register(item.setRegistryName(registryName));
 		}
 	}
 	
@@ -60,9 +83,16 @@ public final class BlocksMCA
 	public static void registerModelMeshers()
 	{
 		ItemModelMesher mesher = Minecraft.getMinecraft().getRenderItem().getItemModelMesher();
-		mesher.register(Item.getItemFromBlock(roseGoldBlock), 0, new ModelResourceLocation("mca:RoseGoldBlock", "inventory"));
-		mesher.register(Item.getItemFromBlock(roseGoldOre), 0, new ModelResourceLocation("mca:RoseGoldOre", "inventory"));
-		mesher.register(Item.getItemFromBlock(spawner), 0, new ModelResourceLocation("mca:VillagerSpawner", "inventory"));
-
+		
+		for (Block block : BLOCKS)
+		{
+			mesher.register(Item.getItemFromBlock(block), 0, new ModelResourceLocation(block.getRegistryName(), "inventory"));
+		}
+	}
+	
+	private static void setBlockName(Block block, String blockName)
+	{
+		block.setRegistryName(MCA.ID, blockName);
+		block.setUnlocalizedName(block.getRegistryName().toString());
 	}
 }
